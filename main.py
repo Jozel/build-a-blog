@@ -8,51 +8,45 @@ app.config['DEBUG'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://build-a-blog2:Cookie1981@localhost:8889/build-a-blog2'
 app.config['SQLALCHEMY_ECHO'] = True
 db = SQLAlchemy(app)
+app.secret_key = "super secret key"
 
 class Blog(db.Model):
+
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(120))
-    body = db.Column(db.Text)
+    title = db.Column(db.String(180))
+    body = db.Column(db.String(1000))
     
 
-    def __init__(self, title, body=True):
+    def __init__(self, title, body ):
         self.title = title
         self.body = body
         
 
 
-@app.route('/', methods=['POST', 'GET'])
-def new_post():
-    form = BlogForm()
+@app.route('/', methods=['GET', 'POST'])
+def new_entry():
+    
+
     if request.method == 'POST':
-        if not form.validate():
-            return render_template('newpost.html', form=form)
-        else:
+        title = request.form['title']
+        body = request.form['body']
+        print(body)
+        new_entry = Blog(title, body) 
+        db.session.add(new_entry)
+        db.session.commit()
+        return redirect('/blog')
+    
+    return render_template('new_entry.html')
 
-            owner = User.query.filter_by(username=session['username']).first()
-            blog_title = form.blog_title.data
-            blog_post = form.blog_post.data
+@app.route('/blog', methods=['GET'])
+def blog():
+     blog_id = request.args.get('id')
+     return render_template('main_blog.html', blog=blog)
+    # if blog_id:
+        #blog_id = request.args.get('id')
+       # blog = Blog.query.get(blog_id)
 
-            new_blog = Blog(blog_title, blog_post, owner)
-            db.session.add(new_blog)
-            db.session.commit()
-
-            return redirect(url_for('blog', id=new_blog.id))
-
-    return render_template('newpost.html', form=form, title="Add a Blog Entry")
-
-
-@app.route('/delete-task', methods=['POST'])
-def delete_task():
-
-    task_id = int(request.form['task-id'])
-    task = Task.query.get(task_id)
-    task.completed = True
-    db.session.add(task)
-    db.session.commit()
-
-    return redirect('/')
-
+    
 
 if __name__ == '__main__':
     app.run()
